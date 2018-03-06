@@ -32,6 +32,7 @@ class ADXL345 {
     this.ADXL345_REG_DATAY1      = 0x35;
     this.ADXL345_REG_DATAZ0      = 0x36;
     this.ADXL345_REG_DATAZ1      = 0x37;
+    this.ADXL345_REG_FIFO_CTL    = 0x38;
 
     this.ADXL345_MG2G_SCALE_FACTOR = 0.004; // 4mg per lsb
     this.EARTH_GRAVITY_MS2 = 9.80665;
@@ -224,6 +225,101 @@ class ADXL345 {
   }
 
   /**
+   * Get FIFO_CTL register
+   * @returns {Promise} Resolves with 8-bit value of FIFO_CTL, rejects with Error.
+   */
+  getFIFOCtl() {
+    return this.readByte(this.ADXL345_REG_FIFO_CTL);
+   }
+
+  /**
+   * Set FIFO_CTL register.  Updates all 8-bits.
+   * @param {number} byte
+   * @returns {Promise} Resolves on success, rejects with Error.
+   */
+  setFIFOCtl(byte) {
+    return this.writeByte(this.ADXL345_REG_FIFO_CTL, byte);
+  }
+
+  /**
+   * Set Samples bits in FIFO_CTL register.  Values of other bits are
+   * preserved.
+   * @param {number} samples - 5-bit value (0-32)
+   * @returns {Promise} Resolves on success, rejects with Error
+   */
+  setFIFOCtlSamples(samples) {
+   if (isNaN(samples) || (samples < 0) || (samples > 32)) {
+     return Promise.reject(TypeError('Invalid sample value.'));
+   }
+   return this.readByte(this.ADXL345_REG_FIFO_CTL).then((reg) => {
+     reg &= 0b11100000;
+     reg |= samples;
+     return this.writeByte(this.ADXL345_REG_FIFO_CTL, reg);
+   });
+  }
+
+  /**
+  * Get Samples setting from FIFO_CTL.  Note: this is the watermark level,  not
+  * not the value of FIFO_STATUS.
+  * @returns {Promise} Resolves with number of samples, rejects with Error
+  */
+  getFIFOCtlSamples() {
+    return this.readByte(this.ADXL345_REG_FIFO_CTL).then((reg) => {
+      return reg & 0b00011111;
+    });
+  }
+
+  /**
+   * Get Trigger bit from FIFO_CTL
+   * @returns {Promise} Resolves with trigger bit, rejects with Error
+   */
+  getFIFOCtlTrigger() {
+    return this.readByte(this.ADXL345_REG_FIFO_CTL).then((reg) => {
+      reg &= (1 << 5);
+      return (reg >> 5);
+    });
+  }
+
+  /**
+   * Set Trigger bit in FIFO_CTL.   The other bits in the register are
+   * preserved.
+   * @param {number} value
+   * @returns {Promise} Resolves on success, rejects with Error
+   */
+   setFIFOCtlTrigger(value) {
+     return this.readByte(this.ADXL345_REG_FIFO_CTL).then((reg) => {
+       reg &= 0b11011111;
+       reg |= value;
+       return this.writeByte(this.ADXL345_REG_FIFO_CTL, reg);
+     });
+   }
+
+  /**
+  * Set FIFO mode in FIFO_CTL. The other bits in the register are
+  * preserved.
+  * @param {number} mode - A 2-bit mode value, or one of ADXL345.FIFO_CTL_MODE_XXX()
+  * @see ADXL345 data sheet, Table 22: FIFO Modes.
+  */
+  setFIFOCtlMode(mode) {
+    return this.readByte(this.ADXL345_REG_FIFO_CTL).then((reg) => {
+      reg &= 0b00111111;
+      reg |= (mode << 6);
+      return this.writeByte(this.ADXL345_REG_FIFO_CTL, reg);
+    });
+  }
+
+  /**
+   * Get FIFO mode from FIFO_CTL
+   * @returns {Promise} Resolves with 2-bit value
+   */
+   getFIFOCtlMode() {
+     return this.readByte(this.ADXL345_REG_FIFO_CTL).then((reg) => {
+       reg &= 0b11000000;
+       return (reg >> 6);
+     });
+   }
+
+  /**
    * Convert 2-byte array into unsigned 16-bit integer
    * @private
    * @param {number} msb
@@ -381,6 +477,14 @@ class ADXL345 {
   static DATARATE_800_HZ()  { return 0b1101; } //  400Hz Bandwidth 140µA IDD
   static DATARATE_1600_HZ() { return 0b1110; } //  800Hz Bandwidth  90µA IDD
   static DATARATE_3200_HZ() { return 0b1111; } // 1600Hz Bandwidth 140µA IDD
+
+  // FIFO_CTL bits.
+  static FIFO_CTL_MODE_BYPASS() { return 0b00; }
+  static FIFO_CTL_MODE_FIFO() { return 0b01; }
+  static FIFO_CTL_MODE_STREAM() { return 0b10; }
+  static FIFO_CTL_MODE_TRIGGER() { return 0b11; }
+  static FIFO_CTL_TRIGGER() { return (1 << 5); }
+  static FIFO_CTL_SAMPLES(samples) { return samples && 0b11111; }
 }
 
 module.exports = ADXL345;

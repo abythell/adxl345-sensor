@@ -220,4 +220,84 @@ describe('adxl345-sensor', () => {
       });
     });
   });
+
+  describe('ADXL345#FIFO_CTL', () => {
+    let adxl345 = null;
+    let writeStub = null;
+    let readStub = null;
+    beforeEach(() => {
+      adxl345 = new ADXL345();
+      writeStub = sinon.stub(adxl345, 'writeByte').resolves();
+      readStub = sinon.stub(adxl345, 'readByte');
+    });
+    it('gets 8-bit value of FIFO_CTL', () => {
+      readStub.resolves(0xFF);
+      return adxl345.getFIFOCtl().then((value) => {
+        expect(readStub.calledWith(0x38)).to.equal(true);
+        expect(value).to.equal(0xFF);
+      });
+    });
+    it('sets 8-bit value of FIFO_CTL', () => {
+      return adxl345.setFIFOCtl(0xFF).then(() => {
+        expect(writeStub.calledWith(0x38, 0xFF)).to.equal(true);
+      });
+    });
+    it('sets watermark/samples', () => {
+      readStub.resolves(0b11100000);
+      return adxl345.setFIFOCtlSamples(0b00011111).then(() => {
+        expect(writeStub.calledWith(0x38, 0b11111111)).to.equal(true);
+      });
+    });
+    it('gets watermark sample count', () => {
+      readStub.resolves(0b111000001);
+      return adxl345.getFIFOCtlSamples().then((samples) => {
+        expect(samples).to.equal(0b00001);
+        expect(readStub.calledWith(0x38));
+      });
+    });
+    it('gets trigger bit', () => {
+      readStub.resolves(0b00100000);
+      return adxl345.getFIFOCtlTrigger().then((trigger) => {
+        expect(trigger).to.equal(1);
+        readStub.resolves(0b11011111);
+        return adxl345.getFIFOCtlTrigger();
+      }).then((trigger) => {
+        expect(trigger).to.equal(0);
+      });
+    });
+    it('sets trigger bit', () => {
+      readStub.resolves(0b11111111);
+      return adxl345.setFIFOCtlTrigger(0).then(() => {
+        expect(writeStub.calledWith(0x38, 0b11011111));
+        readStub.resolves(0b00000000);
+        return adxl345.setFIFOCtlTrigger(1).then(() => {
+          expect(writeStub.calledWith(0x38, 0b00100000));
+        });
+      });
+    });
+    it('sets FIFO_MODE', () => {
+      readStub.resolves(0b11111111);
+      return adxl345.setFIFOCtlMode(0b00).then(() => {
+        expect(writeStub.calledWith(0x38, 0b00111111));
+      });
+    });
+    it('gets FIFO_MODE', () => {
+      readStub.resolves(0b00111111);
+      return adxl345.getFIFOCtlMode().then((mode) => {
+        expect(mode).to.equal(ADXL345.FIFO_CTL_MODE_BYPASS());
+        readStub.resolves(0b01111111);
+        return adxl345.getFIFOCtlMode();
+      }).then((mode) => {
+        expect(mode).to.equal(ADXL345.FIFO_CTL_MODE_FIFO());
+        readStub.resolves(0b10111111);
+        return adxl345.getFIFOCtlMode();
+      }).then((mode) => {
+        expect(mode).to.equal(ADXL345.FIFO_CTL_MODE_STREAM());
+        readStub.resolves(0b11111111);
+        return adxl345.getFIFOCtlMode();
+      }).then((mode) => {
+        expect(mode).to.equal(ADXL345.FIFO_CTL_MODE_TRIGGER());
+      });
+    });
+  });
 });
