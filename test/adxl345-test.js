@@ -300,4 +300,36 @@ describe('adxl345-sensor', () => {
       });
     });
   });
+
+  describe('ADXL345#FIFO_STATUS', () => {
+    let adxl345 = null;
+    let writeStub = null;
+    let readStub = null;
+    beforeEach(() => {
+      adxl345 = new ADXL345();
+      writeStub = sinon.stub(adxl345, 'writeByte').resolves();
+      readStub = sinon.stub(adxl345, 'readByte');
+    });
+    it('gets the value of FIFO_STATUS', () => {
+      readStub.resolves(0xFF);
+      return adxl345.getFIFOStatus().then((reg) => {
+        expect(reg).to.equal(0xFF);
+        expect(readStub.calledWith(0x39)).to.equal(true);
+      });
+    });
+    it('gets the number of entries', () => {
+      readStub.resolves(0b11010101);
+      return adxl345.getFIFOStatusEntries().then((entries) => {
+        expect(entries).to.equal(0b10101);
+        expect(readStub.calledWith(0x39)).to.equal(true);
+      });
+    });
+    it('gets the trigger bit', () => {
+      readStub.resolves(0b10000000);
+      return adxl345.getFIFOStatusTrig().then((trig) => {
+        expect(trig).to.equal(1);
+        expect(readStub.calledWith(0x39)).to.equal(true);
+      });
+    });
+  });
 });

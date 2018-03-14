@@ -33,7 +33,7 @@ class ADXL345 {
     this.ADXL345_REG_DATAZ0      = 0x36;
     this.ADXL345_REG_DATAZ1      = 0x37;
     this.ADXL345_REG_FIFO_CTL    = 0x38;
-
+    this.ADXL345_REG_FIFO_STATUS = 0x39;
     this.ADXL345_MG2G_SCALE_FACTOR = 0.004; // 4mg per lsb
     this.EARTH_GRAVITY_MS2 = 9.80665;
   }
@@ -318,6 +318,37 @@ class ADXL345 {
        return (reg >> 6);
      });
    }
+
+  /**
+  * Get FIFO_STATUS
+  * @returns {Promise} Resolves with 8-bit value of FIFO_STATUS register
+  */
+  getFIFOStatus() {
+    return this.readByte(this.ADXL345_REG_FIFO_STATUS);
+  }
+
+  /**
+   * Get Entries Bits from FIFO_STATUS.  The entries bits report how many data
+   * values are stored in the FIFO.
+   * @returns {Promise} Resolves with the number of samples currentlys stored in
+   * the FIFO.
+   */
+  getFIFOStatusEntries() {
+   return this.getFIFOStatus().then((status) => {
+     return (status & 0b00111111);
+   });
+  }
+
+  /**
+   *  Get FIFO_TRIG bit from FIFO_STATUS register.
+   * @returns {Promise} Resolves with 1-bit value.  1 means a trigger event is
+   * occuring and 0 means that a trigger event has not occurred.
+   */
+  getFIFOStatusTrig() {
+    return this.getFIFOStatus().then((status) => {
+      return (status >> 7);
+    });
+  }
 
   /**
    * Convert 2-byte array into unsigned 16-bit integer
