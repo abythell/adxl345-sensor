@@ -303,11 +303,9 @@ describe('adxl345-sensor', () => {
 
   describe('ADXL345#FIFO_STATUS', () => {
     let adxl345 = null;
-    let writeStub = null;
     let readStub = null;
     beforeEach(() => {
       adxl345 = new ADXL345();
-      writeStub = sinon.stub(adxl345, 'writeByte').resolves();
       readStub = sinon.stub(adxl345, 'readByte');
     });
     it('gets the value of FIFO_STATUS', () => {
@@ -329,6 +327,51 @@ describe('adxl345-sensor', () => {
       return adxl345.getFIFOStatusTrig().then((trig) => {
         expect(trig).to.equal(1);
         expect(readStub.calledWith(0x39)).to.equal(true);
+      });
+    });
+  });
+
+  describe('ADXL345#INT_ENABLE', () => {
+    let adxl345 = null;
+    let writeStub = null;
+    let readStub = null;
+    beforeEach(() => {
+      adxl345 = new ADXL345();
+      writeStub = sinon.stub(adxl345, 'writeByte').resolves();
+      readStub = sinon.stub(adxl345, 'readByte');
+    });
+    it('gets INT_ENABLE register', () => {
+      readStub.resolves(0xFF);
+      return adxl345.getINTEnable().then((byte) => {
+        expect(byte).to.equal(0xFF);
+        expect(readStub.calledWith(0x2E)).to.equal(true);
+      });
+    });
+    it('sets INT_ENABLE register', () => {
+      writeStub.resolves();
+      return adxl345.setINTEnable(ADXL345.INT_ENABLE_DATA_READY).then(() => {
+        expect(writeStub.calledWith(0x2E, 0b10000000));
+        return adxl345.setINTEnable(ADXL345.INT_ENABLE_SINGLE_TAP());
+      }).then(() => {
+        expect(writeStub.calledWith(0x2E, 0b01000000));
+        return adxl345.setINTEnable(ADXL345.INT_ENABLE_DOUBLE_TAP());
+      }).then(() => {
+        expect(writeStub.calledWith(0x2E, 0b00100000));
+        return adxl345.setINTEnable(ADXL345.INT_ENABLE_ACTIVITY());
+      }).then(() => {
+        expect(writeStub.calledWith(0x2E, 0b00010000));
+        return adxl345.setINTEnable(ADXL345.INT_ENABLE_INACTIVITY());
+      }).then(() => {
+        expect(writeStub.calledWith(0x2E, 0b00001000));
+        return adxl345.setINTEnable(ADXL345.INT_ENABLE_FREE_FALL());
+      }).then(() => {
+        expect(writeStub.calledWith(0x2E, 0b00000100));
+        return adxl345.setINTEnable(ADXL345.INT_ENABLE_WATERMARK());
+      }).then(() => {
+        expect(writeStub.calledWith(0x2E, 0b00000010));
+        return adxl345.setINTEnable(ADXL345.INT_ENABLE_OVERRUN);
+      }).then(() => {
+        expect(writeStub.calledWith(0x2E, 0b00000000));
       });
     });
   });

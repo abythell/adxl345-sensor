@@ -25,6 +25,7 @@ class ADXL345 {
     this.ADXL345_REG_OFSZ        = 0x20; // Z-axis offset
     this.ADXL345_REG_BW_RATE     = 0x2C; // Data rate and power mode control
     this.ADXL345_REG_POWER_CTL   = 0x2D; // Power-saving features control
+    this.ADXL345_REG_INT_ENABLE  = 0x2E; // Interrupt enable
     this.ADXL345_REG_DATA_FORMAT = 0x31; // Data format control
     this.ADXL345_REG_DATAX0      = 0x32; // read 6 bytes from ADXL345_REG_DATAX0 for all three axes
     this.ADXL345_REG_DATAX1      = 0x33;
@@ -34,6 +35,7 @@ class ADXL345 {
     this.ADXL345_REG_DATAZ1      = 0x37;
     this.ADXL345_REG_FIFO_CTL    = 0x38;
     this.ADXL345_REG_FIFO_STATUS = 0x39;
+
     this.ADXL345_MG2G_SCALE_FACTOR = 0.004; // 4mg per lsb
     this.EARTH_GRAVITY_MS2 = 9.80665;
   }
@@ -351,6 +353,26 @@ class ADXL345 {
   }
 
   /**
+   * Read the INT_ENABLE register.
+   * @returns {Promise} Resolves with 8-bit register value.  Rejects with Error.
+   */
+  getINTEnable() {
+    return this.readByte(this.ADXL345_REG_INT_ENABLE);
+  }
+
+  /**
+   * Set the INT_ENABLE register.  `byte` can be built by combining the ADXL345.INT_ENABLE_X()
+   * static methods, where X is: DATA_READY | SINGLE_TAP | DOUBLE_TAP | ACTIVITY |
+   * INACTIVITY | FREE_FALL | WATERMARK | OVERRUN.
+   * @example adxl345.setINTEnable(ADXL345_INT_ENABLE_DATA_READY() | ADXL345_INT_ENABLE_WATERMARK())
+   * @param {number} byte - value to write
+   * @returns {Promise} Resolves on success, rejects with Error.
+   */
+  setINTEnable(byte) {
+    return this.writeByte(this.ADXL345_REG_INT_ENABLE, byte);
+  }
+
+  /**
    * Convert 2-byte array into unsigned 16-bit integer
    * @private
    * @param {number} msb
@@ -516,6 +538,16 @@ class ADXL345 {
   static FIFO_CTL_MODE_TRIGGER() { return 0b11; }
   static FIFO_CTL_TRIGGER() { return (1 << 5); }
   static FIFO_CTL_SAMPLES(samples) { return samples && 0b11111; }
+
+  // INT_ENABLE bits.
+  static INT_ENABLE_DATA_READY() { return (1 << 7); }
+  static INT_ENABLE_SINGLE_TAP() { return (1 << 6); }
+  static INT_ENABLE_DOUBLE_TAP() { return (1 << 5); }
+  static INT_ENABLE_ACTIVITY() { return (1 << 4); }
+  static INT_ENABLE_INACTIVITY() { return (1 << 3); }
+  static INT_ENABLE_FREE_FALL() { return (1 << 2); }
+  static INT_ENABLE_WATERMARK() { return (1 << 1); }
+  static INT_ENABLE_OVERRUN() { return (1 << 0); }
 }
 
 module.exports = ADXL345;
