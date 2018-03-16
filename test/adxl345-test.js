@@ -349,29 +349,92 @@ describe('adxl345-sensor', () => {
     });
     it('sets INT_ENABLE register', () => {
       writeStub.resolves();
-      return adxl345.setINTEnable(ADXL345.INT_ENABLE_DATA_READY).then(() => {
+      return adxl345.setINTEnable(ADXL345.INT_DATA_READY).then(() => {
         expect(writeStub.calledWith(0x2E, 0b10000000));
-        return adxl345.setINTEnable(ADXL345.INT_ENABLE_SINGLE_TAP());
+        return adxl345.setINTEnable(ADXL345.INT_SINGLE_TAP());
       }).then(() => {
         expect(writeStub.calledWith(0x2E, 0b01000000));
-        return adxl345.setINTEnable(ADXL345.INT_ENABLE_DOUBLE_TAP());
+        return adxl345.setINTEnable(ADXL345.INT_DOUBLE_TAP());
       }).then(() => {
         expect(writeStub.calledWith(0x2E, 0b00100000));
-        return adxl345.setINTEnable(ADXL345.INT_ENABLE_ACTIVITY());
+        return adxl345.setINTEnable(ADXL345.INT_ACTIVITY());
       }).then(() => {
         expect(writeStub.calledWith(0x2E, 0b00010000));
-        return adxl345.setINTEnable(ADXL345.INT_ENABLE_INACTIVITY());
+        return adxl345.setINTEnable(ADXL345.INT_INACTIVITY());
       }).then(() => {
         expect(writeStub.calledWith(0x2E, 0b00001000));
-        return adxl345.setINTEnable(ADXL345.INT_ENABLE_FREE_FALL());
+        return adxl345.setINTEnable(ADXL345.INT_FREE_FALL());
       }).then(() => {
         expect(writeStub.calledWith(0x2E, 0b00000100));
-        return adxl345.setINTEnable(ADXL345.INT_ENABLE_WATERMARK());
+        return adxl345.setINTEnable(ADXL345.INT_WATERMARK());
       }).then(() => {
         expect(writeStub.calledWith(0x2E, 0b00000010));
-        return adxl345.setINTEnable(ADXL345.INT_ENABLE_OVERRUN);
+        return adxl345.setINTEnable(ADXL345.INT_OVERRUN);
       }).then(() => {
         expect(writeStub.calledWith(0x2E, 0b00000000));
+      });
+    });
+  });
+  describe('ADXL345#INT_MAP', () => {
+    let adxl345 = null;
+    let writeStub = null;
+    let readStub = null;
+    beforeEach(() => {
+      adxl345 = new ADXL345();
+      writeStub = sinon.stub(adxl345, 'writeByte').resolves();
+      readStub = sinon.stub(adxl345, 'readByte');
+    });
+    it('gets INT_MAP register', () => {
+      readStub.resolves(0xFF);
+      return adxl345.getINTMap().then((byte) => {
+        expect(byte).to.equal(0xFF);
+        expect(readStub.calledWith(0x2F)).to.equal(true);
+      });
+    });
+    it('sets INT_MAP register', () => {
+      writeStub.resolves();
+      return adxl345.setINTEnable(ADXL345.INT_DATA_READY).then(() => {
+        expect(writeStub.calledWith(0x2F, 0b10000000));
+      });
+    });
+  });
+
+  describe('ADXL345#INT_SOURCE', () => {
+    let adxl345 = null;
+    let readStub = null;
+    beforeEach(() => {
+      adxl345 = new ADXL345();
+      readStub = sinon.stub(adxl345, 'readByte');
+    });
+    it('gets INT_SOURCE register', () => {
+      readStub.resolves(0xFF);
+      return adxl345.getINTSource().then((byte) => {
+        expect(byte).to.equal(0xFF);
+        expect(readStub.calledWith(0x30)).to.equal(true);
+      });
+    });
+  });
+  describe('ADXL345#INT_INVERT', () => {
+    let adxl345 = null;
+    let readStub = null;
+    let writeStub = null;
+    beforeEach(() => {
+      adxl345 = new ADXL345();
+      readStub = sinon.stub(adxl345, 'readByte');
+      writeStub = sinon.stub(adxl345, 'writeByte');
+    });
+    it('sets active-high', () => {
+      readStub.resolves(0xFF);
+      return adxl345.setINTActiveHigh().then(() => {
+        expect(readStub.calledWith(0x31)).to.equal(true);
+        expect(writeStub.calledWith(0x31, 0b11011111)).to.equal(true);
+      });
+    });
+    it('sets active-low', () => {
+      readStub.resolves(0x00);
+      return adxl345.setINTActiveLow().then(() => {
+        expect(readStub.calledWith(0x31)).to.equal(true);
+        expect(writeStub.calledWith(0x31, 0b00100000)).to.equal(true);
       });
     });
   });

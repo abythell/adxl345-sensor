@@ -26,6 +26,8 @@ class ADXL345 {
     this.ADXL345_REG_BW_RATE     = 0x2C; // Data rate and power mode control
     this.ADXL345_REG_POWER_CTL   = 0x2D; // Power-saving features control
     this.ADXL345_REG_INT_ENABLE  = 0x2E; // Interrupt enable
+    this.ADXL345_REG_INT_MAP     = 0x2F; // Interrupt map
+    this.ADXL345_REG_INT_SOURCE  = 0x30; // Interrupt source
     this.ADXL345_REG_DATA_FORMAT = 0x31; // Data format control
     this.ADXL345_REG_DATAX0      = 0x32; // read 6 bytes from ADXL345_REG_DATAX0 for all three axes
     this.ADXL345_REG_DATAX1      = 0x33;
@@ -105,6 +107,31 @@ class ADXL345 {
   }
 
   /**
+   * Get POWER_CTL register.
+   * @returns {Promise} Resolves with 8-bit value, rejects with Error.
+   */
+  getPowerCtl() {
+    return this.readByte(this.ADXL345_REG_POWER_CTL);
+  }
+
+  /**
+   * Turn measurement on or off by setting the Measure bit of the POWER_CTL
+   * register.
+   * @param {boolean} enable - true to enable, false to disable
+   */
+  enableMeasurement(enable) {
+    return this.getPowerCtl((byte) => {
+      if (enable) {
+        byte |= (1 << 3);
+      }
+      else {
+        byte &= 0b11110111;
+      }
+      return this.setPowerCtl(byte);
+    });
+  }
+
+  /**
    * Initialize the device.  Performs a device ID check, then  puts then
    * device into measurement mode.
    * @returns {Promise} Resolves with device ID on success, rejects with Error.
@@ -169,7 +196,8 @@ class ADXL345 {
   /**
    * Set date rate.  LOW_POWER bit is always cleared (ie. normal operation)
    * when the rate is set.
-   * @param {number} dataRate - 4-bit data rate value
+   * @param {number} dataRate - 4-bit data rate value, or ADXL345.DATARATE_X_HZ()
+   * Default data rate on reset is ADXL345.DATARATE_100_HZ().
    * @returns {Promise} Resolves on success, rejects with Error.
    */
   setDataRate(dataRate) {
@@ -299,7 +327,8 @@ class ADXL345 {
   /**
   * Set FIFO mode in FIFO_CTL. The other bits in the register are
   * preserved.
-  * @param {number} mode - A 2-bit mode value, or one of ADXL345.FIFO_CTL_MODE_XXX()
+  * @param {number} mode - A 2-bit mode value, or one of ADXL345.FIFO_CTL_MODE_X()
+  * where X = BYPASS, FIFO, STREAM, TRIGGER
   * @see ADXL345 data sheet, Table 22: FIFO Modes.
   */
   setFIFOCtlMode(mode) {
@@ -361,15 +390,66 @@ class ADXL345 {
   }
 
   /**
-   * Set the INT_ENABLE register.  `byte` can be built by combining the ADXL345.INT_ENABLE_X()
+   * Set the INT_ENABLE register.  `byte` can be built by combining the ADXL345.INT_X()
    * static methods, where X is: DATA_READY | SINGLE_TAP | DOUBLE_TAP | ACTIVITY |
    * INACTIVITY | FREE_FALL | WATERMARK | OVERRUN.
-   * @example adxl345.setINTEnable(ADXL345_INT_ENABLE_DATA_READY() | ADXL345_INT_ENABLE_WATERMARK())
+   * @example adxl345.setINTEnable(ADXL345_INT_DATA_READY() | ADXL345_INT_WATERMARK())
    * @param {number} byte - value to write
    * @returns {Promise} Resolves on success, rejects with Error.
    */
   setINTEnable(byte) {
     return this.writeByte(this.ADXL345_REG_INT_ENABLE, byte);
+  }
+
+  /**
+   * Read the INT_ENABLE register.  A set bit indicates the interrupt is mapped
+   * to INT2.  A clear bit (default) maps the interrupt to INT1.
+   * @returns {Promise} Resolves with 8-bit register value.  Rejects with Error.
+   */
+  getINTMap() {
+    return this.readByte(this.ADXL345_REG_INT_MAP);
+  }
+
+  /**
+   * Set the INT_MAP register.  `byte` can be built by combining the ADXL345.INT_X()
+   * static methods, where X is: DATA_READY | SINGLE_TAP | DOUBLE_TAP | ACTIVITY |
+   * INACTIVITY | FREE_FALL | WATERMARK | OVERRUN.
+   * @example adxl345.setINTMap(ADXL345_INT_DATA_READY() | ADXL345_INT_WATERMARK())
+   * @param {number} byte - value to write
+   * @returns {Promise} Resolves on success, rejects with Error.
+   */
+  setINTMap(byte) {
+    return this.writeByte(this.ADXL345_REG_INT_MAP, byte);
+  }
+
+  /**
+   * Read the INT_SOURCE register.
+   * @returns {Promise} Resolves with 8-bit register value.  Rejects with Error.
+   */
+  getINTSource() {
+    return this.readByte(this.ADXL345_REG_INT_SOURCE);
+  }
+
+  /**
+   * Set interrupt signals to active-low.  Sets the INT_INVERT bit in the
+   * DATA_FORMAT register to 1.  At start-up the default is active-high.
+   */
+  setINTActiveLow() {
+    return this.readByte(this.ADXL345_REG_DATA_FORMAT).then((format) => {
+      format |= (1 << 5);
+      return this.writeByte(this.ADXL345_REG_DATA_FORMAT, format);
+    });
+  }
+
+  /**
+   * Set interrupt signals to active-high.  Clears ths INT_INVERT bit in the
+   * DATA_FORMAT register.  At start-up the default is active-high.
+   */
+  setINTActiveHigh() {
+    return this.readByte(this.ADXL345_REG_DATA_FORMAT).then((format) => {
+      format &= (0b11011111);
+      return this.writeByte(this.ADXL345_REG_DATA_FORMAT, format);
+    });
   }
 
   /**
@@ -449,6 +529,7 @@ class ADXL345 {
 
   /**
    * Convert range bits into string.
+   * @private
    * @param {number} range - 2-bit range value
    * @returns {string}
    */
@@ -466,6 +547,7 @@ class ADXL345 {
 
   /**
    * Convert rate bytes into string.
+   * @private
    * @param {number} rate - 2-byte rate value
    * @returns {string}
    */
@@ -540,14 +622,14 @@ class ADXL345 {
   static FIFO_CTL_SAMPLES(samples) { return samples && 0b11111; }
 
   // INT_ENABLE bits.
-  static INT_ENABLE_DATA_READY() { return (1 << 7); }
-  static INT_ENABLE_SINGLE_TAP() { return (1 << 6); }
-  static INT_ENABLE_DOUBLE_TAP() { return (1 << 5); }
-  static INT_ENABLE_ACTIVITY() { return (1 << 4); }
-  static INT_ENABLE_INACTIVITY() { return (1 << 3); }
-  static INT_ENABLE_FREE_FALL() { return (1 << 2); }
-  static INT_ENABLE_WATERMARK() { return (1 << 1); }
-  static INT_ENABLE_OVERRUN() { return (1 << 0); }
+  static INT_DATA_READY() { return (1 << 7); }
+  static INT_SINGLE_TAP() { return (1 << 6); }
+  static INT_DOUBLE_TAP() { return (1 << 5); }
+  static INT_ACTIVITY() { return (1 << 4); }
+  static INT_INACTIVITY() { return (1 << 3); }
+  static INT_FREE_FALL() { return (1 << 2); }
+  static INT_WATERMARK() { return (1 << 1); }
+  static INT_OVERRUN() { return (1 << 0); }
 }
 
 module.exports = ADXL345;
