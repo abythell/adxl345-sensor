@@ -4,7 +4,9 @@
   "description": "A Node.js I2C module for the Analog Devices ADXL345 three-axis digital accelerometer",
   "main": "ADXL345.js",
   "scripts": {
-    "test": "mocha"
+    "test": "mocha",
+    "doc": "jsdoc ADXL345.js -R README.md -d doc"
+
   },
   "repository": {
     "type": "git",
@@ -27,7 +29,8 @@
   },
   "homepage": "https://github.com/skylarstein/adxl345-sensor#readme",
   "dependencies": {
-    "i2c-bus": "^1.1.2"
+    "i2c-bus": "^1.1.2",
+    "jsdoc": "^3.5.5"
   },
   "devDependencies": {
     "chai": "^3.5.0",
