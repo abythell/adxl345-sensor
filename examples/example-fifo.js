@@ -17,6 +17,7 @@ const adxl345 = new ADXL345({
  */
 function readFIFOSimple() {
   return adxl345.getFIFOStatusEntries().then((samples) => {
+    console.log(samples);
     let buffer = [];
     for (let i = 0; i < samples; i += 1) {
       buffer.push(adxl345.getAcceleration(true));
@@ -27,21 +28,20 @@ function readFIFOSimple() {
 
 /** read fifo continuously */
 function readFIFO() {
-  for (;;) {
-    readFIFOSimple().then((data) => {
-      console.log(data);
+    return readFIFOSimple().then((data) => {
+      // console.log(data);
+      return readFIFO();
     });
-  }
 }
 
 adxl345.enableMeasurement(false)
-.then(() => { adxl345.setDataRate(ADXL345.DATARATE_100_HZ()); })
-.then(() => { adxl345.setMeasurementRange(ADXL345.RANGE_2_G()); })
-.then(() => { adxl345.setOffsetX(0); })
-.then(() => { adxl345.setOffsetY(0); })
-.then(() => { adxl345.setOffsetZ(0); })
-.then(() => { adxl345.setFIFOCtlMode(ADXL345.FIFO_CTL_MODE_FIFO()); })
-.then(() => { adxl345.setFIFOCtlSamples(16); })
+.then(() => { return adxl345.setDataRate(ADXL345.DATARATE_100_HZ()); })
+.then(() => { return adxl345.setMeasurementRange(ADXL345.RANGE_2_G()); })
+.then(() => { return adxl345.setOffsetX(0); })
+.then(() => { return adxl345.setOffsetY(0); })
+.then(() => { return adxl345.setOffsetZ(0); })
+.then(() => { return adxl345.setFIFOCtlMode(ADXL345.FIFO_CTL_MODE_FIFO()); })
+//.then(() => { return adxl345.setFIFOCtlSamples(16); })
 // .then(() => { adxl345.setINTActiveLow(); })
 // .then(() => { adxl345.setINTMap(ADXL345.INT_OVERRUN()); })
 // .then(() => { adxl345.setINTEnable(ADXL345.INT_OVERRUN() | ADXL345.INT_WATERMARK()); })
